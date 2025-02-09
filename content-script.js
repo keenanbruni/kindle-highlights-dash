@@ -329,30 +329,27 @@ function assignHighlightsToChapters(chapters, highlights) {
 async function runDashboard() {
     console.log("Starting dashboard extraction...");
     
-    // First get chapter data
     const chapters = await getChapterData();
     console.log("Chapters extracted:", chapters);
     
-    // Then get highlights with new annotation handling
     const highlights = await getHighlightsData();
     console.log("Highlights extracted:", highlights);
     
-    // Process the results
     const results = assignHighlightsToChapters(chapters, highlights.map(h => h.page));
     console.log("Highlight counts per chapter:", results);
-  
-    // Optionally, you can update the page DOM or send the results to your popup here.
-  }
-  
-  // --- Message Listener ---
-  // This listener waits for a message from the popup (with action "runDashboard")
-  // and then executes the runDashboard function.
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    
+    return results;  // Return the results for the popup
+}
+
+// --- Message Listener ---
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'runDashboard') {
-      runDashboard().then(() => {
-        sendResponse({ status: 'Dashboard process started.' });
-      });
-      // Return true to indicate that the response will be sent asynchronously.
-      return true;
+        runDashboard().then((results) => {
+            sendResponse({ 
+                status: 'Dashboard process completed.',
+                data: results
+            });
+        });
+        return true;
     }
-  });
+});

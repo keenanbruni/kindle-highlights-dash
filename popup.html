@@ -1,29 +1,98 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Kindle Dashboard</title>
+    <title>Kindle Highlights Data</title>
+    <script src="chart.js"></script>
     <style>
       body {
         margin: 0;
-        padding: 10px;
+        padding: 15px;
         font-family: Arial, sans-serif;
-        width: 200px;
+        width: 600px;
+        height: 500px;
       }
       button {
         padding: 10px 15px;
         font-size: 14px;
         cursor: pointer;
+        background-color: #0066cc;
+        color: white;
+        border: none;
+        border-radius: 4px;
+      }
+      button:hover {
+        background-color: #0052a3;
       }
       #status {
         margin-top: 10px;
         font-size: 12px;
         color: #555;
       }
+      #results-container {
+        margin-top: 20px;
+        display: none;
+      }
+      .chart-container {
+        position: relative;
+        height: 400px;
+        width: 100%;
+      }
+      .stats {
+        display: flex;
+        justify-content: space-around;
+        margin-bottom: 20px;
+        padding: 10px;
+        background: #f5f5f5;
+        border-radius: 4px;
+      }
+      .stat-box {
+        text-align: center;
+      }
+      .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #0066cc;
+      }
+      .stat-label {
+        font-size: 12px;
+        color: #666;
+      }
+      .warning {
+        color: #856404;
+        background-color: #fff3cd;
+        border: 1px solid #ffeeba;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+        display: none;
+      }
     </style>
   </head>
   <body>
     <button id="run-dashboard">Run Dashboard</button>
     <div id="status"></div>
+    <div id="warning" class="warning">
+      Please keep this popup open while the data is being collected...
+    </div>
+    <div id="results-container">
+      <div class="stats">
+        <div class="stat-box">
+          <div class="stat-value" id="total-highlights">0</div>
+          <div class="stat-label">Total Highlights</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="total-chapters">0</div>
+          <div class="stat-label">Total Chapters</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="avg-highlights">0</div>
+          <div class="stat-label">Avg. Highlights/Chapter</div>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="highlightsChart"></canvas>
+      </div>
+    </div>
     <script src="popup.js"></script>
   </body>
 </html>
