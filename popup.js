@@ -88,15 +88,15 @@ document.getElementById('run-dashboard').addEventListener('click', () => {
   chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
     if (tabs.length === 0) return;
 
-    document.getElementById('status').textContent = 'Processing...';
-    document.getElementById('warning').style.display = 'block';
+    const statusEl = document.getElementById('status');
+    statusEl.textContent = 'Processing... Please keep this popup open while the data is being collected.';
+    statusEl.style.display = 'block';
     document.getElementById('export-data').disabled = true;
     
     chrome.tabs.sendMessage(tabs[0].id, { action: 'runDashboard' }, response => {
       if (response && response.data) {
         document.getElementById('results-container').style.display = 'block';
-        document.getElementById('status').textContent = 'Dashboard updated!';
-        document.getElementById('warning').style.display = 'none';
+        statusEl.style.display = 'none';
         document.getElementById('export-data').disabled = false;
         updateStats(response.data);
         updateChart(response.data);
@@ -104,8 +104,7 @@ document.getElementById('run-dashboard').addEventListener('click', () => {
         // Store the data for export
         window.dashboardData = response.data;
       } else {
-        document.getElementById('status').textContent = 'Error processing data.';
-        document.getElementById('warning').style.display = 'none';
+        statusEl.textContent = 'Error processing data.';
       }
     });
   });
