@@ -1,11 +1,11 @@
 {
     "manifest_version": 3,
-    "name": "Kindle Highlights Data",
+    "name": "Kindle Highlights Visualizer",
     "description": "A Chrome extension that extracts and visualizes Kindle highlights per chapter.",
     "version": "1.0",
     "action": {
       "default_popup": "popup.html",
-      "default_title": "Kindle Highlights Data"
+      "default_title": "Kindle Highlights Visualizer"
     },
     "content_scripts": [
       {
