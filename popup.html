@@ -86,9 +86,21 @@
       .export-button:hover {
         background-color: #218838;
       }
+      .warning {
+        margin-bottom: 15px;
+        padding: 10px;
+        background-color: #fff3cd;
+        border: 1px solid #ffeeba;
+        color: #856404;
+        border-radius: 4px;
+        font-size: 13px;
+      }
     </style>
   </head>
   <body>
+    <div class="warning" id="warning-message">
+    Make sure the Table of Contents and Annotations tabs are CLOSED before clicking Run Dashboard!
+    </div>
     <div class="top-controls">
       <button id="run-dashboard">Run Dashboard</button>
       <div class="export-container">

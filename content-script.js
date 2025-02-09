@@ -148,19 +148,19 @@ async function getItemPosition($tocItem) {
     return null;
 }
 
-async function getChapterData() {
+async function getChapterData(progressCallback) {
     const chapters = [];
     let previousPosition = null;
     
     // --- STEP 1 & 2: Open TOC ---
     const $pageContainer = $('.pagination-container');
-    if ($pageContainer.length) {
-        $pageContainer.click();
-        await delay(1000);
-    } else {
+    if (!$pageContainer.length) {
         console.error("Page container not found. Please adjust the selector.");
         return chapters;
     }
+    
+    $pageContainer.click();
+    await delay(1000);
 
     const tocButton = getShadowButton();
     if (!tocButton) {
@@ -178,9 +178,14 @@ async function getChapterData() {
     }
 
     // --- STEP 4: Iterate through chapters while keeping TOC open ---
+    let index = 0;
     for (const item of tocItems) {
         const titleElement = item.querySelector('.chapter-title');
         const chapterTitle = titleElement ? titleElement.textContent.trim() : 'Unknown Chapter';
+
+        if (progressCallback) {
+            progressCallback(index + 1, tocItems.length, chapterTitle);
+        }
 
         console.log(`Processing chapter: "${chapterTitle}"`);
 
@@ -212,6 +217,8 @@ async function getChapterData() {
         if (!locationChanged) {
             console.error(`Failed to navigate to "${chapterTitle}" after 3 attempts`);
         }
+
+        index++;
     }
 
     return chapters;
@@ -329,16 +336,35 @@ function assignHighlightsToChapters(chapters, highlights) {
 async function runDashboard() {
     console.log("Starting dashboard extraction...");
     
-    const chapters = await getChapterData();
+    const sendProgress = (percentage, details) => {
+        chrome.runtime.sendMessage({
+            type: 'progress',
+            percentage: Math.round(percentage),
+            details
+        });
+    };
+
+    sendProgress(0, 'Opening Table of Contents...');
+    const chapters = await getChapterData((current, total, chapter) => {
+        const percentage = (current / total) * 70; // TOC processing is 70% of total
+        sendProgress(percentage, `Processing chapter ${current}/${total}: ${chapter}`);
+    });
     console.log("Chapters extracted:", chapters);
     
+    sendProgress(70, 'Collecting highlights...');
     const highlights = await getHighlightsData();
     console.log("Highlights extracted:", highlights);
     
+    sendProgress(90, 'Processing data...');
     const results = assignHighlightsToChapters(chapters, highlights.map(h => h.page));
     console.log("Highlight counts per chapter:", results);
     
-    return results;  // Return the results for the popup
+    chrome.runtime.sendMessage({
+        type: 'complete',
+        data: results
+    });
+    
+    return results;
 }
 
 // --- Message Listener ---

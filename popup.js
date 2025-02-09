@@ -89,25 +89,33 @@ document.getElementById('run-dashboard').addEventListener('click', () => {
     if (tabs.length === 0) return;
 
     const statusEl = document.getElementById('status');
-    statusEl.textContent = 'Processing... Please keep this popup open while the data is being collected.';
+    statusEl.textContent = 'Initializing... (0%)';
     statusEl.style.display = 'block';
     document.getElementById('export-data').disabled = true;
+    document.getElementById('warning-message').style.display = 'none'; // Add this line
     
-    chrome.tabs.sendMessage(tabs[0].id, { action: 'runDashboard' }, response => {
-      if (response && response.data) {
-        document.getElementById('results-container').style.display = 'block';
-        statusEl.style.display = 'none';
-        document.getElementById('export-data').disabled = false;
-        updateStats(response.data);
-        updateChart(response.data);
-        
-        // Store the data for export
-        window.dashboardData = response.data;
-      } else {
-        statusEl.textContent = 'Error processing data.';
+    chrome.tabs.sendMessage(tabs[0].id, { action: 'runDashboard' }, null, response => {
+      if (chrome.runtime.lastError) {
+        statusEl.textContent = 'Error: ' + chrome.runtime.lastError.message;
+        return;
       }
     });
   });
+});
+
+// Add message listener for progress updates
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'progress') {
+    const statusEl = document.getElementById('status');
+    statusEl.textContent = `${message.details} (${message.percentage}%)`;
+  } else if (message.type === 'complete' && message.data) {
+    document.getElementById('results-container').style.display = 'block';
+    document.getElementById('status').style.display = 'none';
+    document.getElementById('export-data').disabled = false;
+    updateStats(message.data);
+    updateChart(message.data);
+    window.dashboardData = message.data;
+  }
 });
 
 // Initially disable export button
