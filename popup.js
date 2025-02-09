@@ -7,16 +7,16 @@ function updateChart(data) {
     chart.destroy();
   }
 
-  // Sort data chronologically by page number
-  const sortedData = [...data].sort((a, b) => a.startPage - b.startPage);
+  // Use data in its natural order (remove the sort)
+  const chartData = data; // natural TOC order from getChapterData
 
   chart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: sortedData.map(d => d.title),
+      labels: chartData.map(d => d.title),
       datasets: [{
         label: 'Highlights per Chapter',
-        data: sortedData.map(d => d.count),
+        data: chartData.map(d => d.count),
         backgroundColor: 'rgba(0, 102, 204, 0.2)',
         borderColor: 'rgba(0, 102, 204, 1)',
         borderWidth: 1
@@ -29,7 +29,7 @@ function updateChart(data) {
         padding: {
           left: 20,
           right: 20,
-          bottom: 100  // Add more padding at bottom for labels
+          bottom: 100  // Padding for labels
         }
       },
       scales: {
@@ -57,7 +57,7 @@ function updateChart(data) {
         tooltip: {
           callbacks: {
             title: function(context) {
-              return sortedData[context[0].dataIndex].title;
+              return chartData[context[0].dataIndex].title;
             }
           }
         }

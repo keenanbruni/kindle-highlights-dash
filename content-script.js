@@ -297,36 +297,29 @@ async function getHighlightsData() {
  * @returns {Array<{title: string, startPage: number, count: number}>} - Array with the count of highlights per chapter.
  */
 function assignHighlightsToChapters(chapters, highlights) {
-    // Sort chapters by their starting page number.
-    chapters.sort((a, b) => a.page - b.page);
-    // Sort highlight page numbers.
+    // Do not sort chapters so that they preserve the correct TOC order.
+    // Sort highlight page numbers in ascending order.
     highlights.sort((a, b) => a - b);
   
-    // Initialize count objects for each chapter.
+    // Initialize count objects based on the natural TOC order.
     const chapterHighlightCounts = chapters.map(chapter => ({
       title: chapter.title,
       startPage: chapter.page,
       count: 0
     }));
   
-    // For each highlight, find which chapter it belongs to.
+    // For each highlight, iterate from the last chapter backwards.
     highlights.forEach(highlightPage => {
-      let assignedChapterIndex = null;
-      // Since chapters are sorted, assign the highlight to the last chapter with a start page <= highlightPage.
-      for (let i = 0; i < chapters.length; i++) {
-        if (highlightPage >= chapters[i].page) {
-          assignedChapterIndex = i;
-        } else {
-          break;
+        for (let i = chapters.length - 1; i >= 0; i--) {
+            if (highlightPage >= chapters[i].page) {
+                chapterHighlightCounts[i].count++;
+                break;
+            }
         }
-      }
-      if (assignedChapterIndex !== null) {
-        chapterHighlightCounts[assignedChapterIndex].count++;
-      }
     });
   
     return chapterHighlightCounts;
-  }
+}
   
 /**
  * Main function to run the dashboard extraction process.
