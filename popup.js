@@ -53,24 +53,79 @@ function updateStats(data) {
   document.getElementById('avg-highlights').textContent = avgHighlights;
 }
 
+function exportToCSV(data) {
+  const headers = ['Chapter', 'Start Page', 'Highlight Count'];
+  const csvContent = [
+    headers.join(','),
+    ...data.map(row => [
+      `"${row.title.replace(/"/g, '""')}"`,
+      row.startPage,
+      row.count
+    ].join(','))
+  ].join('\n');
+
+  downloadFile(csvContent, 'kindle-highlights.csv', 'text/csv');
+}
+
+function exportToJSON(data) {
+  const jsonContent = JSON.stringify(data, null, 2);
+  downloadFile(jsonContent, 'kindle-highlights.json', 'application/json');
+}
+
+function downloadFile(content, fileName, contentType) {
+  const blob = new Blob([content], { type: contentType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 document.getElementById('run-dashboard').addEventListener('click', () => {
   chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
     if (tabs.length === 0) return;
 
     document.getElementById('status').textContent = 'Processing...';
     document.getElementById('warning').style.display = 'block';
+    document.getElementById('export-data').disabled = true;
     
     chrome.tabs.sendMessage(tabs[0].id, { action: 'runDashboard' }, response => {
       if (response && response.data) {
         document.getElementById('results-container').style.display = 'block';
         document.getElementById('status').textContent = 'Dashboard updated!';
         document.getElementById('warning').style.display = 'none';
+        document.getElementById('export-data').disabled = false;
         updateStats(response.data);
         updateChart(response.data);
+        
+        // Store the data for export
+        window.dashboardData = response.data;
       } else {
         document.getElementById('status').textContent = 'Error processing data.';
         document.getElementById('warning').style.display = 'none';
       }
     });
   });
+});
+
+// Initially disable export button
+document.getElementById('export-data').disabled = true;
+
+document.getElementById('export-data').addEventListener('click', () => {
+  const format = document.getElementById('export-format').value;
+  const data = window.dashboardData;
+  
+  if (!data) {
+    console.error('No data available for export');
+    return;
+  }
+
+  if (format === 'csv') {
+    exportToCSV(data);
+  } else if (format === 'json') {
+    exportToJSON(data);
+  }
 });
