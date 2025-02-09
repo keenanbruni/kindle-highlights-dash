@@ -1,0 +1,23 @@
+{
+    "manifest_version": 3,
+    "name": "Kindle Highlights Dashboard",
+    "version": "0.1",
+    "action": {
+      "default_popup": "popup.html",
+      "default_title": "Kindle Dashboard"
+    },
+    "content_scripts": [
+      {
+        "matches": ["https://read.amazon.com/*"],
+        "js": [
+          "jquery-3.7.1.min.js",
+          "content-script.js"
+        ],
+        "run_at": "document_idle"
+      }
+    ],
+    "permissions": [
+      "activeTab",
+      "scripting"
+    ]
+  }
