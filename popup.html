@@ -6,19 +6,24 @@
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
-    <div class="warning" id="warning-message">
-    Make sure the Table of Contents and Annotations tabs are CLOSED before clicking Run Dashboard
-    </div>
     <div class="top-controls">
-      <button id="run-dashboard">Run Dashboard</button>
-      <div class="export-container">
-        <select id="export-format">
-          <option value="csv">CSV</option>
-          <option value="json">JSON</option>
-        </select>
-        <button class="export-button" id="export-data">Export Data</button>
+      <div class="left-controls">
+        <button id="run-dashboard">Run Dashboard</button>
+        <div class="export-container">
+          <select id="export-format">
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+          </select>
+          <button class="export-button" id="export-data">Export Data</button>
+        </div>
+      </div>
+      <div class="icon-container">
+        <img src="icons/icon48.png" alt="Kindle Highlights Data">
       </div>
     </div>
+    <div class="warning" id="warning-message">
+      Make sure the Table of Contents and Annotations tabs are CLOSED before clicking Run Dashboard
+      </div>
     <div id="status"></div>
     <div id="results-container">
       <div class="stats">
