@@ -25,6 +25,13 @@ function updateChart(data) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      layout: {
+        padding: {
+          left: 20,
+          right: 20,
+          bottom: 100  // Add more padding at bottom for labels
+        }
+      },
       scales: {
         y: {
           beginAtZero: true,
@@ -33,9 +40,25 @@ function updateChart(data) {
           }
         },
         x: {
+          grid: {
+            display: false
+          },
           ticks: {
             maxRotation: 45,
-            minRotation: 45
+            minRotation: 45,
+            autoSkip: false,  // Show all labels
+            font: {
+              size: 10  // Smaller font size
+            }
+          }
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            title: function(context) {
+              return sortedData[context[0].dataIndex].title;
+            }
           }
         }
       }
@@ -112,6 +135,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     document.getElementById('results-container').style.display = 'block';
     document.getElementById('status').style.display = 'none';
     document.getElementById('export-data').disabled = false;
+    
+    // Resize popup when showing results
+    const width = Math.min(800, Math.max(500, window.innerWidth));
+    const height = Math.min(800, Math.max(500, window.innerHeight));
+    document.body.style.width = width + 'px';
+    document.body.style.height = height + 'px';
+    
     updateStats(message.data);
     updateChart(message.data);
     window.dashboardData = message.data;

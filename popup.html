@@ -8,8 +8,10 @@
         margin: 0;
         padding: 15px;
         font-family: Arial, sans-serif;
-        width: 600px;
-        height: 500px;
+        min-width: 400px;
+        min-height: 200px;
+        max-height: 800px;
+        overflow-y: auto;
       }
       button {
         padding: 10px 15px;
@@ -36,11 +38,16 @@
       #results-container {
         margin-top: 20px;
         display: none;
+        width: 100%;
+        min-width: 500px;
       }
       .chart-container {
         position: relative;
-        height: 400px;
+        min-height: 400px;  /* Increase minimum height */
+        height: 70vh;       /* Increase height relative to viewport */
         width: 100%;
+        max-height: 600px;  /* Increase maximum height */
+        margin-bottom: 20px;
       }
       .stats {
         display: flex;
@@ -99,7 +106,7 @@
   </head>
   <body>
     <div class="warning" id="warning-message">
-    Make sure the Table of Contents and Annotations tabs are CLOSED before clicking Run Dashboard!
+    Make sure the Table of Contents and Annotations tabs are CLOSED before clicking Run Dashboard
     </div>
     <div class="top-controls">
       <button id="run-dashboard">Run Dashboard</button>
