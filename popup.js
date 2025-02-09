@@ -136,11 +136,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     document.getElementById('status').style.display = 'none';
     document.getElementById('export-data').disabled = false;
     
-    // Resize popup when showing results
-    const width = Math.min(800, Math.max(500, window.innerWidth));
-    const height = Math.min(800, Math.max(500, window.innerHeight));
-    document.body.style.width = width + 'px';
-    document.body.style.height = height + 'px';
+    // Use CSS class instead of inline styles
+    document.body.classList.add('processed');
     
     updateStats(message.data);
     updateChart(message.data);
