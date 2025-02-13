@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "Kindle Highlights Visualizer",
+    "name": "Kindle Highlights Dash",
     "description": "A Chrome extension that extracts and visualizes Kindle highlights per chapter.",
     "version": "1.0",
     "action": {
