@@ -1,9 +1,9 @@
-# Kindle Highlights Visualizer
+# Kindle Highlights Dash
 
-// ...existing introduction if any...
+// waiting for Chrome Store to accept package
 
 ## What It Does
-Kindle Highlights Visualizer is a Chrome extension that extracts and visualizes Kindle highlights by chapter.
+Shows you what chapters you should reread in your Kindle book based on quantity of highlights.
 
 ## Extension Marketplace
 Find the extension on the Chrome Web Store: [Kindle Highlights Visualizer](https://chrome.google.com/webstore).
@@ -14,9 +14,12 @@ Find the extension on the Chrome Web Store: [Kindle Highlights Visualizer](https
 3. Click the extension icon to view highlights per chapter.
 4. Use the provided interface to navigate through highlights.
 
-## Screenshots
+## Screen Recording
 // Add screenshots below by linking to your image files:
-![Extension in Action](path/to/screenshot1.png)
-![Highlight Visualization](path/to/screenshot2.png)
+https://github.com/user-attachments/assets/aaa90699-b518-49b7-a2bd-73ae94442c28
+
+
+// ![Extension in Action](path/to/screenshot1.png)
+// ![Highlight Visualization](path/to/screenshot2.png)
 
 // ...more content as needed...
