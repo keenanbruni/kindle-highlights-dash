@@ -2,7 +2,7 @@
 
 Shows you what chapters you should reread in your Kindle book based on quantity of highlights.
 
-Find the extension on the Chrome Web Store: [Kindle Highlights Dash](https://chrome.google.com/webstore).
+Find the extension on the Chrome Web Store: [Kindle Highlights Dash](https://chromewebstore.google.com/detail/kindle-highlights-dash/hoegpkapjhncgcpdmocjhnkmimidaimh).
 
 ## How to Use
 1. Install the extension.
@@ -13,3 +13,5 @@ Find the extension on the Chrome Web Store: [Kindle Highlights Dash](https://chr
 ## Screen Recording
 
 https://github.com/user-attachments/assets/aaa90699-b518-49b7-a2bd-73ae94442c28
+
+Let me know if you can think of any additional features that could be useful.
