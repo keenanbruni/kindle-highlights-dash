@@ -149,6 +149,12 @@ async function getItemPosition($tocItem) {
 }
 
 async function getChapterData(progressCallback) {
+    // Add test mode check
+    if (window.location.hash === '#test') {
+        const { chapters } = generateTestData();
+        return chapters;
+    }
+    
     const chapters = [];
     let previousPosition = null;
     
@@ -256,6 +262,12 @@ async function openAnnotations() {
  * @returns {Promise<Array<{page: number, text: string}>>}
  */
 async function getHighlightsData() {
+    // Add test mode check
+    if (window.location.hash === '#test') {
+        const { highlights } = generateTestData();
+        return highlights;
+    }
+    
     const opened = await openAnnotations();
     if (!opened) {
         console.error("Could not open annotations view");
@@ -372,3 +384,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 });
+
+// Add this function near the top with other helper functions
+function generateTestData() {
+    const chapters = [];
+    const highlights = [];
+    
+    // INSTRUCTIONS: add #test to the URL and then run the extension
+    // This will generate test data instead of trying to interact with the Kindle Cloud Reader
+    // Generate 35 chapters with increasing page numbers
+    for (let i = 1; i <= 35; i++) {
+        chapters.push({
+            title: `Chapter ${i}: Test Chapter With A Long Name That Tests Layout`,
+            page: i * 20, // Pages increase by 20 to simulate real book spacing
+            type: 'page'
+        });
+        
+        // Generate 5-15 random highlights for each chapter
+        const numHighlights = Math.floor(Math.random() * 10) + 5;
+        for (let j = 0; j < numHighlights; j++) {
+            highlights.push({
+                page: (i * 20) + Math.floor(Math.random() * 19), // Random page within chapter
+                text: `Test highlight ${j + 1} for chapter ${i}`
+            });
+        }
+    }
+    
+    return { chapters, highlights };
+}
