@@ -7,7 +7,39 @@
  */
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
-  }
+}
+
+/**
+ * Parse a Kindle page or location label.
+ * @param {string} text - Text containing a page or location number.
+ * @param {string} [preferredType] - Preferred coordinate type when both are present.
+ * @returns {{type: string, number: number} | null}
+ */
+function parsePositionText(text, preferredType) {
+    const matches = [
+        ...(text?.matchAll(/\b(Page|Location|Loc\.?)\s+([\d,]+)/gi) || [])
+    ];
+    if (!matches.length) {
+        return null;
+    }
+
+    const match = matches.find(candidate => {
+        const type = candidate[1].toLowerCase().startsWith('page')
+            ? 'page'
+            : 'location';
+        return type === preferredType;
+    }) || matches[0];
+
+    const number = Number.parseInt(match[2].replace(/,/g, ''), 10);
+    if (!Number.isFinite(number)) {
+        return null;
+    }
+
+    return {
+        type: match[1].toLowerCase().startsWith('page') ? 'page' : 'location',
+        number
+    };
+}
 
 /**
  * Helper function to get the TOC button from the shadow DOM.
@@ -98,9 +130,9 @@ async function getCurrentPosition() {
                     if (progressDiv) {
                         const text = progressDiv.textContent.trim();
                         console.log(`Found position in iframe: ${text}`);
-                        const match = text.match(/(Page|Location)\s+(\d+)\s+of\s+\d+/);
-                        if (match) {
-                            return { type: match[1].toLowerCase(), number: parseInt(match[2], 10) };
+                        const position = parsePositionText(text);
+                        if (position) {
+                            return position;
                         }
                     }
                 } catch (e) {
@@ -109,9 +141,9 @@ async function getCurrentPosition() {
             } else {
                 const text = element.textContent.trim();
                 console.log(`Found position in element: ${text}`);
-                const match = text.match(/(Page|Location)\s+(\d+)\s+of\s+\d+/);
-                if (match) {
-                    return { type: match[1].toLowerCase(), number: parseInt(match[2], 10) };
+                const position = parsePositionText(text);
+                if (position) {
+                    return position;
                 }
             }
         }
@@ -235,33 +267,38 @@ async function getChapterData(progressCallback) {
  * @returns {Promise<void>}
  */
 async function openAnnotations() {
-    const annotationsButton = document.querySelector('ion-button[title="Annotations"]');
+    const annotationsButton = document.querySelector([
+        'ion-button[data-testid="top_menu_notebook"]',
+        'ion-button[item-i-d="top_menu_notebook"]',
+        'ion-button[aria-label="Annotations"]',
+        'ion-button[title="Annotations"]'
+    ].join(', '));
+
     if (!annotationsButton) {
         console.error("Annotations button not found");
         return false;
     }
 
-    // Click the annotations button using similar ion-button click handling
-    const clickEvent = new CustomEvent('click', {
-        bubbles: true,
-        composed: true,
-        detail: { sourceEvent: { isTrusted: true } }
-    });
-    annotationsButton.dispatchEvent(clickEvent);
-    
-    // Wait for annotations to load
-    await delay(2000);
-    
-    // Verify annotations loaded
-    const annotationItems = document.querySelectorAll('.notebook-editable-item');
-    return annotationItems.length > 0;
+    annotationsButton.click();
+
+    const timeoutAt = Date.now() + 10000;
+    while (Date.now() < timeoutAt) {
+        const annotationItems = document.querySelectorAll('.notebook-editable-item');
+        if (annotationItems.length > 0) {
+            return true;
+        }
+        await delay(250);
+    }
+
+    console.error("Annotations panel opened, but no annotation items were found");
+    return false;
 }
 
 /**
  * Updated highlight collection function
- * @returns {Promise<Array<{page: number, text: string}>>}
+ * @returns {Promise<Array<{page: number, type: string, text: string}>>}
  */
-async function getHighlightsData() {
+async function getHighlightsData(preferredPositionType) {
     // Add test mode check
     if (window.location.hash === '#test') {
         const { highlights } = generateTestData();
@@ -280,17 +317,17 @@ async function getHighlightsData() {
     items.forEach(item => {
         const titleElem = item.querySelector('.grouped-annotation_title');
         const textElem = item.querySelector('.notebook-editable-item-black');
-        
-        if (titleElem && textElem) {
-            const titleText = titleElem.textContent.trim();
-            const match = titleText.match(/Page\s+(\d+)/);
-            
-            if (match && match[1]) {
-                highlights.push({
-                    page: parseInt(match[1], 10),
-                    text: textElem.textContent.trim()
-                });
-            }
+
+        const position =
+            parsePositionText(titleElem?.textContent, preferredPositionType) ||
+            parsePositionText(item.textContent, preferredPositionType);
+
+        if (position) {
+            highlights.push({
+                page: position.number,
+                type: position.type,
+                text: textElem?.textContent.trim() || ''
+            });
         }
     });
 
@@ -305,13 +342,16 @@ async function getHighlightsData() {
  * selecting the last chapter whose starting page is less than or equal to the highlight page.
  *
  * @param {Array<{title: string, page: number}>} chapters - Array of chapters with start pages.
- * @param {number[]} highlights - Array of highlight page numbers.
+ * @param {Array<{page: number, type?: string}>} highlights - Highlight positions.
  * @returns {Array<{title: string, startPage: number, count: number}>} - Array with the count of highlights per chapter.
  */
 function assignHighlightsToChapters(chapters, highlights) {
     // Do not sort chapters so that they preserve the correct TOC order.
-    // Sort highlight page numbers in ascending order.
-    highlights.sort((a, b) => a - b);
+    const comparableHighlights = highlights
+        .filter(highlight => chapters.some(chapter =>
+            !highlight.type || !chapter.type || highlight.type === chapter.type
+        ))
+        .sort((a, b) => a.page - b.page);
   
     // Initialize count objects based on the natural TOC order.
     const chapterHighlightCounts = chapters.map(chapter => ({
@@ -321,9 +361,13 @@ function assignHighlightsToChapters(chapters, highlights) {
     }));
   
     // For each highlight, iterate from the last chapter backwards.
-    highlights.forEach(highlightPage => {
+    comparableHighlights.forEach(highlight => {
         for (let i = chapters.length - 1; i >= 0; i--) {
-            if (highlightPage >= chapters[i].page) {
+            const samePositionType = !highlight.type ||
+                !chapters[i].type ||
+                highlight.type === chapters[i].type;
+
+            if (samePositionType && highlight.page >= chapters[i].page) {
                 chapterHighlightCounts[i].count++;
                 break;
             }
@@ -357,11 +401,12 @@ async function runDashboard() {
     console.log("Chapters extracted:", chapters);
     
     sendProgress(70, 'Collecting highlights...');
-    const highlights = await getHighlightsData();
+    const preferredPositionType = chapters.find(chapter => chapter.type)?.type;
+    const highlights = await getHighlightsData(preferredPositionType);
     console.log("Highlights extracted:", highlights);
     
     sendProgress(90, 'Processing data...');
-    const results = assignHighlightsToChapters(chapters, highlights.map(h => h.page));
+    const results = assignHighlightsToChapters(chapters, highlights);
     console.log("Highlight counts per chapter:", results);
     
     chrome.runtime.sendMessage({
