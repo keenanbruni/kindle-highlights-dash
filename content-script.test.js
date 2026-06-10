@@ -59,6 +59,30 @@ test('assignHighlightsToChapters counts matching location positions', () => {
     );
 });
 
+test('getBackNavigationControl finds Kindle back-to-page button', () => {
+    const unrelatedButton = {
+        textContent: '',
+        getAttribute(name) {
+            return name === 'aria-label' ? 'Next page' : null;
+        }
+    };
+    const backButton = {
+        textContent: 'Back to 273',
+        getAttribute() {
+            return null;
+        }
+    };
+
+    context.document = {
+        querySelectorAll(selector) {
+            assert.equal(selector, 'button, ion-button, [role="button"]');
+            return [unrelatedButton, backButton];
+        }
+    };
+
+    assert.equal(context.getBackNavigationControl(), backButton);
+});
+
 test('openAnnotations uses the current Kindle notebook button selector', async () => {
     const button = {
         clickCalled: false,

@@ -51,6 +51,60 @@ function getShadowButton() {
 }
 
 /**
+ * Find Kindle's history control, such as "Back to 273".
+ * @returns {HTMLElement|null}
+ */
+function getBackNavigationControl() {
+    const controls = document.querySelectorAll(
+        'button, ion-button, [role="button"]'
+    );
+
+    return [...controls].find(control => {
+        const label = [
+            control.textContent,
+            control.getAttribute?.('aria-label'),
+            control.getAttribute?.('title')
+        ].filter(Boolean).join(' ').trim();
+
+        return /^Back to\b/i.test(label);
+    }) || null;
+}
+
+/**
+ * Return to the page Kindle had open before the chapter scan.
+ * @param {{type: string, number: number} | null} originalPosition
+ * @returns {Promise<boolean>}
+ */
+async function restoreOriginalPosition(originalPosition) {
+    const backControl = getBackNavigationControl();
+    if (!backControl) {
+        console.error("Kindle's back-to-original-page control was not found");
+        return false;
+    }
+
+    backControl.click();
+
+    const timeoutAt = Date.now() + 10000;
+    while (Date.now() < timeoutAt) {
+        await delay(250);
+
+        if (!originalPosition) {
+            return true;
+        }
+
+        const currentPosition = await getCurrentPosition();
+        if (currentPosition &&
+            currentPosition.type === originalPosition.type &&
+            currentPosition.number === originalPosition.number) {
+            return true;
+        }
+    }
+
+    console.error("Kindle did not return to the original page before timeout");
+    return false;
+}
+
+/**
  * Helper function to simulate hover on an element
  * @param {JQuery<HTMLElement>} $element - The jQuery element to hover over
  * @param {number} hoverTime - Time in milliseconds to hover
@@ -180,7 +234,7 @@ async function getItemPosition($tocItem) {
     return null;
 }
 
-async function getChapterData(progressCallback) {
+async function getChapterData(progressCallback, startingPositionCallback) {
     // Add test mode check
     if (window.location.hash === '#test') {
         const { chapters } = generateTestData();
@@ -199,6 +253,10 @@ async function getChapterData(progressCallback) {
     
     $pageContainer.click();
     await delay(1000);
+
+    if (startingPositionCallback) {
+        startingPositionCallback(await getCurrentPosition());
+    }
 
     const tocButton = getShadowButton();
     if (!tocButton) {
@@ -384,6 +442,8 @@ function assignHighlightsToChapters(chapters, highlights) {
  */
 async function runDashboard() {
     console.log("Starting dashboard extraction...");
+    const isTestMode = window.location.hash === '#test';
+    let originalPosition = null;
     
     const sendProgress = (percentage, details) => {
         chrome.runtime.sendMessage({
@@ -397,6 +457,9 @@ async function runDashboard() {
     const chapters = await getChapterData((current, total, chapter) => {
         const percentage = (current / total) * 70; // TOC processing is 70% of total
         sendProgress(percentage, `Processing chapter ${current}/${total}: ${chapter}`);
+    }, position => {
+        originalPosition = position;
+        console.log("Original reading position:", originalPosition);
     });
     console.log("Chapters extracted:", chapters);
     
@@ -408,6 +471,12 @@ async function runDashboard() {
     sendProgress(90, 'Processing data...');
     const results = assignHighlightsToChapters(chapters, highlights);
     console.log("Highlight counts per chapter:", results);
+
+    if (!isTestMode) {
+        sendProgress(95, 'Returning to your original page...');
+        const restored = await restoreOriginalPosition(originalPosition);
+        console.log("Original reading position restored:", restored);
+    }
     
     chrome.runtime.sendMessage({
         type: 'complete',
