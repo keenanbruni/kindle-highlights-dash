@@ -83,6 +83,37 @@ test('getBackNavigationControl finds Kindle back-to-page button', () => {
     assert.equal(context.getBackNavigationControl(), backButton);
 });
 
+test('restoreOriginalPosition unwinds multiple Kindle history entries', async () => {
+    const positions = [325, 320, 317, 100];
+    let positionIndex = 0;
+    let clickCount = 0;
+
+    context.document = {
+        querySelectorAll() {
+            return [{
+                textContent: `Back to ${positions[positionIndex + 1]}`,
+                getAttribute() {
+                    return null;
+                },
+                click() {
+                    clickCount++;
+                    positionIndex++;
+                }
+            }];
+        }
+    };
+    context.getCurrentPosition = async () => ({
+        type: 'page',
+        number: positions[positionIndex]
+    });
+
+    assert.equal(
+        await context.restoreOriginalPosition({ type: 'page', number: 100 }),
+        true
+    );
+    assert.equal(clickCount, 3);
+});
+
 test('openAnnotations uses the current Kindle notebook button selector', async () => {
     const button = {
         clickCalled: false,

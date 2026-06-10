@@ -76,31 +76,54 @@ function getBackNavigationControl() {
  * @returns {Promise<boolean>}
  */
 async function restoreOriginalPosition(originalPosition) {
-    const backControl = getBackNavigationControl();
-    if (!backControl) {
-        console.error("Kindle's back-to-original-page control was not found");
+    if (!originalPosition) {
+        console.error("The original reading position was not captured");
         return false;
     }
 
-    backControl.click();
+    const positionsMatch = position =>
+        position &&
+        position.type === originalPosition.type &&
+        position.number === originalPosition.number;
 
-    const timeoutAt = Date.now() + 10000;
-    while (Date.now() < timeoutAt) {
-        await delay(250);
+    const timeoutAt = Date.now() + 120000;
+    const maxHistorySteps = 100;
 
-        if (!originalPosition) {
+    for (let step = 0; step < maxHistorySteps && Date.now() < timeoutAt; step++) {
+        const positionBeforeClick = await getCurrentPosition();
+        if (positionsMatch(positionBeforeClick)) {
             return true;
         }
 
-        const currentPosition = await getCurrentPosition();
-        if (currentPosition &&
-            currentPosition.type === originalPosition.type &&
-            currentPosition.number === originalPosition.number) {
-            return true;
+        const backControl = getBackNavigationControl();
+        if (!backControl) {
+            console.error("Kindle's previous-position control was not found");
+            return false;
+        }
+
+        backControl.click();
+
+        const stepTimeoutAt = Date.now() + 5000;
+        while (Date.now() < stepTimeoutAt) {
+            await delay(250);
+
+            const currentPosition = await getCurrentPosition();
+            if (positionsMatch(currentPosition)) {
+                return true;
+            }
+
+            const positionChanged = currentPosition && (
+                !positionBeforeClick ||
+                currentPosition.type !== positionBeforeClick.type ||
+                currentPosition.number !== positionBeforeClick.number
+            );
+            if (positionChanged) {
+                break;
+            }
         }
     }
 
-    console.error("Kindle did not return to the original page before timeout");
+    console.error("Kindle's history did not reach the original reading position");
     return false;
 }
 
