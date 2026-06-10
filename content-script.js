@@ -161,26 +161,47 @@ async function triggerClick($element) {
  * @param {Element} ionItem - The ion-item element to interact with
  */
 async function triggerIonItemClick(ionItem) {
-    // Get the ion-label element inside the ion-item
     const ionLabel = ionItem.querySelector('ion-label');
-    
-    // Create and dispatch proper ion events
     const ionClickEvent = new CustomEvent('click', {
         bubbles: true,
         composed: true,
         detail: { sourceEvent: { isTrusted: true } }
     });
 
-    // Focus and click the label
     if (ionLabel) {
         ionLabel.focus();
-        await delay(100);
         ionLabel.dispatchEvent(ionClickEvent);
+        return;
     }
-    
-    // Also click the item itself
+
     ionItem.dispatchEvent(ionClickEvent);
-    await delay(500);
+}
+
+/**
+ * Wait until Kindle reports a different page or location.
+ * @param {{type: string, number: number} | null} previousPosition
+ * @param {number} timeoutMs
+ * @returns {Promise<{type: string, number: number} | null>}
+ */
+async function waitForPositionChange(previousPosition, timeoutMs = 4000) {
+    const timeoutAt = Date.now() + timeoutMs;
+
+    while (Date.now() < timeoutAt) {
+        const currentPosition = await getCurrentPosition();
+        const positionChanged = currentPosition && (
+            !previousPosition ||
+            currentPosition.type !== previousPosition.type ||
+            currentPosition.number !== previousPosition.number
+        );
+
+        if (positionChanged) {
+            return currentPosition;
+        }
+
+        await delay(100);
+    }
+
+    return null;
 }
 
 /**
@@ -275,7 +296,7 @@ async function getChapterData(progressCallback, startingPositionCallback) {
     }
     
     $pageContainer.click();
-    await delay(1000);
+    await delay(250);
 
     if (startingPositionCallback) {
         startingPositionCallback(await getCurrentPosition());
@@ -287,7 +308,12 @@ async function getChapterData(progressCallback, startingPositionCallback) {
       return chapters;
     }
     tocButton.click();
-    await delay(1000);
+
+    const tocTimeoutAt = Date.now() + 5000;
+    while (!document.querySelector('ion-item.toc-item') &&
+        Date.now() < tocTimeoutAt) {
+        await delay(100);
+    }
   
     // --- STEP 3: Get TOC items ---
     const tocItems = document.querySelectorAll('ion-item.toc-item');
@@ -310,15 +336,16 @@ async function getChapterData(progressCallback, startingPositionCallback) {
 
         let locationChanged = false;
         for (let attempt = 0; attempt < 3 && !locationChanged; attempt++) {
-            // Use the new ion-item click handling
+            const positionBeforeClick = await getCurrentPosition();
             await triggerIonItemClick(item);
-            await delay(2000);
 
-            const position = await getCurrentPosition();
+            const position = await waitForPositionChange(positionBeforeClick);
             console.log(`Current position for "${chapterTitle}":`, position);
             
             if (position) {
-                if (!previousPosition || previousPosition.number !== position.number) {
+                if (!previousPosition ||
+                    previousPosition.type !== position.type ||
+                    previousPosition.number !== position.number) {
                     locationChanged = true;
                     previousPosition = position;
                     chapters.push({ 

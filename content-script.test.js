@@ -114,6 +114,23 @@ test('restoreOriginalPosition unwinds multiple Kindle history entries', async ()
     assert.equal(clickCount, 3);
 });
 
+test('waitForPositionChange returns as soon as Kindle updates the footer', async () => {
+    const positions = [
+        { type: 'page', number: 10 },
+        { type: 'page', number: 25 }
+    ];
+    let lookupCount = 0;
+
+    context.getCurrentPosition = async () =>
+        positions[Math.min(lookupCount++, positions.length - 1)];
+
+    assert.deepEqual(
+        { ...await context.waitForPositionChange(positions[0], 1000) },
+        positions[1]
+    );
+    assert.equal(lookupCount, 2);
+});
+
 test('openAnnotations uses the current Kindle notebook button selector', async () => {
     const button = {
         clickCalled: false,
